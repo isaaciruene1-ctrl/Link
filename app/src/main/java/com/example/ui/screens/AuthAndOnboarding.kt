@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -32,6 +30,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -41,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,8 +63,9 @@ fun AuthScreen(
     val scope = rememberCoroutineScope()
     val credentialManager = remember(context) { CredentialManager.create(context) }
 
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by rememberSaveable { mutableStateOf(false) }
+    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var showBottomSheetOption by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         GoogleAuthManager.attemptAutoSignIn(
@@ -180,10 +181,13 @@ fun AuthScreen(
                             },
                             onAuthError = { msg ->
                                 isLoading = false
+                                showBottomSheetOption = true
                                 errorMessage = msg
                             },
-                            onAuthCancelled = {
+                            onAuthCancelled = { diagnostic ->
                                 isLoading = false
+                                showBottomSheetOption = true
+                                errorMessage = diagnostic
                             }
                         )
                     },
@@ -206,6 +210,41 @@ fun AuthScreen(
                             text = stringResource(R.string.sign_in_with_google),
                             style = MaterialTheme.typography.titleMedium
                         )
+                    }
+                }
+
+                if (showBottomSheetOption) {
+                    OutlinedButton(
+                        onClick = {
+                            isLoading = true
+                            errorMessage = null
+                            GoogleAuthManager.onGoogleBottomSheetSignInClicked(
+                                context = context,
+                                credentialManager = credentialManager,
+                                scope = scope,
+                                onAuthSuccess = {
+                                    isLoading = false
+                                    onAuthSuccess()
+                                },
+                                onAuthError = { msg ->
+                                    isLoading = false
+                                    errorMessage = msg
+                                },
+                                onAuthCancelled = { diagnostic ->
+                                    isLoading = false
+                                    errorMessage = diagnostic
+                                }
+                            )
+                        },
+                        enabled = !isLoading,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .minimumInteractiveComponentSize()
+                            .testTag("google_bottom_sheet_sign_in_button"),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Try Google One-Tap Account Sheet")
                     }
                 }
             }
