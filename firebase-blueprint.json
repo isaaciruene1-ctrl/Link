@@ -1,0 +1,288 @@
+{
+  "entities": {
+    "UserDevice": {
+      "title": "UserDevice",
+      "description": "Paired or active Android device registered in the user's LINK ecosystem.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owning user."
+        },
+        "deviceName": {
+          "type": "string",
+          "description": "User-facing device display name."
+        },
+        "manufacturer": {
+          "type": "string",
+          "description": "Device manufacturer reported by android.os.Build.MANUFACTURER."
+        },
+        "model": {
+          "type": "string",
+          "description": "Device model reported by android.os.Build.MODEL."
+        },
+        "deviceType": {
+          "type": "string",
+          "enum": ["PHONE", "TABLET", "OTHER"],
+          "description": "Hardware form factor."
+        },
+        "groupName": {
+          "type": "string",
+          "enum": ["My Devices", "Work Devices", "Home Devices", "Temporary Devices"],
+          "description": "Primary ecosystem device group."
+        },
+        "publicKeyFingerprint": {
+          "type": "string",
+          "description": "SHA-256 fingerprint of the device Android Keystore ECDSA identity key."
+        },
+        "batteryLevel": {
+          "type": "integer",
+          "description": "Battery percentage from 0 to 100, or -1 if unavailable."
+        },
+        "charging": {
+          "type": "boolean",
+          "description": "Whether the device is currently charging."
+        },
+        "networkType": {
+          "type": "string",
+          "enum": ["WIFI", "CELLULAR", "OFFLINE", "UNKNOWN"],
+          "description": "Current active network transport."
+        },
+        "online": {
+          "type": "boolean",
+          "description": "Whether the device is currently active in LINK."
+        },
+        "trusted": {
+          "type": "boolean",
+          "description": "Whether trust has been explicitly confirmed by the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of registration (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last status update (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "deviceName",
+        "manufacturer",
+        "model",
+        "deviceType",
+        "groupName",
+        "publicKeyFingerprint",
+        "batteryLevel",
+        "charging",
+        "networkType",
+        "online",
+        "trusted",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SharedWorkspace": {
+      "title": "SharedWorkspace",
+      "description": "Cross-device workspace holding shared notes, pinned links, and task checklists.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owning user."
+        },
+        "title": {
+          "type": "string",
+          "description": "Workspace name."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Shared plain-text workspace notes."
+        },
+        "pinnedLink": {
+          "type": "string",
+          "description": "Optional pinned URL for quick cross-device handoff."
+        },
+        "tasks": {
+          "type": "array",
+          "description": "Bounded checklist of workspace tasks."
+        },
+        "activeDeviceName": {
+          "type": "string",
+          "description": "Device that most recently edited this workspace."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "notes",
+        "tasks",
+        "activeDeviceName",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CloudHandoff": {
+      "title": "CloudHandoff",
+      "description": "Explicit user-initiated cross-device handoff signal.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owning user."
+        },
+        "sourceDeviceId": {
+          "type": "string",
+          "description": "Originating device ID."
+        },
+        "sourceDeviceName": {
+          "type": "string",
+          "description": "Originating device display name."
+        },
+        "targetDeviceId": {
+          "type": "string",
+          "description": "Target device ID or ALL."
+        },
+        "actionType": {
+          "type": "string",
+          "enum": ["OPEN_URL", "OPEN_WORKSPACE", "CLIPBOARD_NOTE"],
+          "description": "Supported continuation intent type."
+        },
+        "title": {
+          "type": "string",
+          "description": "Human-readable handoff card title."
+        },
+        "payload": {
+          "type": "string",
+          "description": "URL, workspace ID, or explicit note text."
+        },
+        "consumed": {
+          "type": "boolean",
+          "description": "Whether the target device has continued or dismissed this handoff."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of handoff dispatch."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": [
+        "userId",
+        "sourceDeviceId",
+        "sourceDeviceName",
+        "targetDeviceId",
+        "actionType",
+        "title",
+        "payload",
+        "consumed",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RelaySignal": {
+      "title": "RelaySignal",
+      "description": "WebRTC SDP/ICE signaling or end-to-end encrypted cloud relay packet between user devices off-LAN.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owning user."
+        },
+        "roomId": {
+          "type": "string",
+          "description": "Deterministic or session-scoped relay room identifier."
+        },
+        "senderDeviceId": {
+          "type": "string",
+          "description": "Sender device ID."
+        },
+        "senderDeviceName": {
+          "type": "string",
+          "description": "Sender device display name."
+        },
+        "targetDeviceId": {
+          "type": "string",
+          "description": "Target device ID."
+        },
+        "signalType": {
+          "type": "string",
+          "enum": ["OFFER", "ANSWER", "ICE_CANDIDATE", "ENCRYPTED_RELAY_PACKET", "WAKE_PING"],
+          "description": "Signaling or encrypted relay packet type."
+        },
+        "payload": {
+          "type": "string",
+          "description": "SDP/ICE JSON or AES-GCM encrypted relay ciphertext."
+        },
+        "consumed": {
+          "type": "boolean",
+          "description": "Whether the target device has processed this signal."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": [
+        "userId",
+        "roomId",
+        "senderDeviceId",
+        "senderDeviceName",
+        "targetDeviceId",
+        "signalType",
+        "payload",
+        "consumed",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/devices/{deviceId}": {
+      "schema": {
+        "$ref": "#/entities/UserDevice"
+      },
+      "description": "User-scoped paired and active LINK devices."
+    },
+    "/users/{userId}/workspaces/{workspaceId}": {
+      "schema": {
+        "$ref": "#/entities/SharedWorkspace"
+      },
+      "description": "User-scoped shared continuity workspaces."
+    },
+    "/users/{userId}/handoffs/{handoffId}": {
+      "schema": {
+        "$ref": "#/entities/CloudHandoff"
+      },
+      "description": "User-scoped explicit activity handoff signals."
+    },
+    "/users/{userId}/relaySignals/{signalId}": {
+      "schema": {
+        "$ref": "#/entities/RelaySignal"
+      },
+      "description": "User-scoped WebRTC signaling and end-to-end encrypted remote relay envelopes."
+    }
+  }
+}

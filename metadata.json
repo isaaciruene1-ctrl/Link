@@ -1,0 +1,6 @@
+{
+  "name": "LINK",
+  "description": "Universal Android device ecosystem for local discovery, cryptographic pairing, chunked file transfer, universal clipboard, notification sync, and smart handoff.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,220 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidDeviceType(t) {
+      return t in ['PHONE', 'TABLET', 'OTHER'];
+    }
+
+    function isValidGroupName(g) {
+      return g in ['My Devices', 'Work Devices', 'Home Devices', 'Temporary Devices'];
+    }
+
+    function isValidNetworkType(n) {
+      return n in ['WIFI', 'CELLULAR', 'OFFLINE', 'UNKNOWN'];
+    }
+
+    function isValidUserDevice(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.deviceName is string && data.deviceName.size() >= 1 && data.deviceName.size() <= 60 &&
+             data.manufacturer is string && data.manufacturer.size() <= 60 &&
+             data.model is string && data.model.size() <= 60 &&
+             isValidDeviceType(data.deviceType) &&
+             isValidGroupName(data.groupName) &&
+             data.publicKeyFingerprint is string && data.publicKeyFingerprint.size() >= 8 && data.publicKeyFingerprint.size() <= 128 &&
+             data.batteryLevel is int && data.batteryLevel >= -1 && data.batteryLevel <= 100 &&
+             data.charging is bool &&
+             isValidNetworkType(data.networkType) &&
+             data.online is bool &&
+             data.trusted is bool;
+    }
+
+    function isValidSharedWorkspace(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 80 &&
+             data.notes is string && data.notes.size() <= 2000 &&
+             (!('pinnedLink' in data) || (data.pinnedLink is string && data.pinnedLink.size() <= 500)) &&
+             data.tasks is list && data.tasks.size() <= 25 &&
+             (data.tasks.size() == 0 || data.tasks[0] is string) &&
+             data.activeDeviceName is string && data.activeDeviceName.size() <= 60;
+    }
+
+    function isValidHandoffAction(a) {
+      return a in ['OPEN_URL', 'OPEN_WORKSPACE', 'CLIPBOARD_NOTE'];
+    }
+
+    function isValidCloudHandoff(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.sourceDeviceId is string && data.sourceDeviceId.size() >= 1 && data.sourceDeviceId.size() <= 128 &&
+             data.sourceDeviceName is string && data.sourceDeviceName.size() >= 1 && data.sourceDeviceName.size() <= 60 &&
+             data.targetDeviceId is string && data.targetDeviceId.size() >= 1 && data.targetDeviceId.size() <= 128 &&
+             isValidHandoffAction(data.actionType) &&
+              data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+              data.payload is string && data.payload.size() >= 1 && data.payload.size() <= 2000 &&
+              data.consumed is bool;
+     }
+
+     function isValidSignalType(s) {
+       return s in ['OFFER', 'ANSWER', 'ICE_CANDIDATE', 'ENCRYPTED_RELAY_PACKET', 'WAKE_PING'];
+     }
+
+     function isValidRelaySignal(data) {
+       return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+              data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 128 &&
+              data.senderDeviceId is string && data.senderDeviceId.size() >= 1 && data.senderDeviceId.size() <= 128 &&
+              data.senderDeviceName is string && data.senderDeviceName.size() >= 1 && data.senderDeviceName.size() <= 60 &&
+              data.targetDeviceId is string && data.targetDeviceId.size() >= 1 && data.targetDeviceId.size() <= 128 &&
+              isValidSignalType(data.signalType) &&
+              data.payload is string && data.payload.size() >= 1 && data.payload.size() <= 8000 &&
+              data.consumed is bool;
+     }
+
+    match /users/{userId}/devices/{deviceId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(deviceId);
+      allow create: if isOwner(userId) &&
+                       isValidId(deviceId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'deviceName', 'manufacturer', 'model', 'deviceType',
+                         'groupName', 'publicKeyFingerprint', 'batteryLevel', 'charging',
+                         'networkType', 'online', 'trusted', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'deviceName', 'manufacturer', 'model', 'deviceType',
+                         'groupName', 'publicKeyFingerprint', 'batteryLevel', 'charging',
+                         'networkType', 'online', 'trusted', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidUserDevice(incoming());
+      allow update: if isOwner(userId) &&
+                       isValidId(deviceId) &&
+                       isValidUserDevice(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'deviceName', 'groupName', 'batteryLevel', 'charging',
+                         'networkType', 'online', 'trusted', 'updatedAt'
+                       ]);
+      allow delete: if isOwner(userId) && isValidId(deviceId);
+    }
+
+    match /users/{userId}/workspaces/{workspaceId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(workspaceId);
+      allow create: if isOwner(userId) &&
+                       isValidId(workspaceId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'title', 'notes', 'tasks', 'activeDeviceName', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'title', 'notes', 'pinnedLink', 'tasks', 'activeDeviceName', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidSharedWorkspace(incoming());
+      allow update: if isOwner(userId) &&
+                       isValidId(workspaceId) &&
+                       isValidSharedWorkspace(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'title', 'notes', 'pinnedLink', 'tasks', 'activeDeviceName', 'updatedAt'
+                       ]);
+      allow delete: if isOwner(userId) && isValidId(workspaceId);
+    }
+
+    match /users/{userId}/handoffs/{handoffId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(handoffId);
+      allow create: if isOwner(userId) &&
+                       isValidId(handoffId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'sourceDeviceId', 'sourceDeviceName', 'targetDeviceId',
+                         'actionType', 'title', 'payload', 'consumed', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'sourceDeviceId', 'sourceDeviceName', 'targetDeviceId',
+                         'actionType', 'title', 'payload', 'consumed', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidCloudHandoff(incoming());
+      allow update: if isOwner(userId) &&
+                       isValidId(handoffId) &&
+                       isValidCloudHandoff(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().sourceDeviceId == existing().sourceDeviceId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'consumed', 'updatedAt'
+                       ]);
+      allow delete: if isOwner(userId) && isValidId(handoffId);
+    }
+
+    match /users/{userId}/relaySignals/{signalId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(signalId);
+      allow create: if isOwner(userId) &&
+                       isValidId(signalId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'roomId', 'senderDeviceId', 'senderDeviceName',
+                         'targetDeviceId', 'signalType', 'payload', 'consumed',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'roomId', 'senderDeviceId', 'senderDeviceName',
+                         'targetDeviceId', 'signalType', 'payload', 'consumed',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidRelaySignal(incoming());
+      allow update: if isOwner(userId) &&
+                       isValidId(signalId) &&
+                       isValidRelaySignal(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().roomId == existing().roomId &&
+                       incoming().senderDeviceId == existing().senderDeviceId &&
+                       incoming().targetDeviceId == existing().targetDeviceId &&
+                       incoming().signalType == existing().signalType &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'consumed', 'updatedAt'
+                       ]);
+      allow delete: if isOwner(userId) && isValidId(signalId);
+    }
+  }
+}
