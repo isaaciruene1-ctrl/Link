@@ -1,0 +1,20 @@
+{
+  "name": "link",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/isaaciruene1-ctrl/Link#readme",
+  "bugs": {
+    "url": "https://github.com/isaaciruene1-ctrl/Link/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isaaciruene1-ctrl/Link.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "firestore.test.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
