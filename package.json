@@ -1,20 +1,20 @@
 {
-  "name": "link",
+  "name": "Link",
   "version": "1.0.0",
-  "description": "",
-  "homepage": "https://github.com/isaaciruene1-ctrl/Link#readme",
-  "bugs": {
-    "url": "https://github.com/isaaciruene1-ctrl/Link/issues"
+  "description": "firestore.test.js",
+  "main": "firestore.test.js",
+  "scripts": {
+    "test": "echo \"No tests\""
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/isaaciruene1-ctrl/Link.git"
   },
-  "license": "ISC",
+  "keywords": [],
   "author": "",
-  "type": "commonjs",
-  "main": "firestore.test.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  }
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/isaaciruene1-ctrl/Link/issues"
+  },
+  "homepage": "https://github.com/isaaciruene1-ctrl/Link#readme"
 }
