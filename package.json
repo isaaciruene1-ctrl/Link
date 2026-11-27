@@ -4,7 +4,8 @@
   "description": "firestore.test.js",
   "main": "firestore.test.js",
   "scripts": {
-    "test": "echo \"No tests\""
+    "test": "echo \"No tests\"",
+    "build": "echo \"No build needed\""
   },
   "repository": {
     "type": "git",
