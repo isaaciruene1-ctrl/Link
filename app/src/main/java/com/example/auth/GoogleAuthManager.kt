@@ -2,12 +2,17 @@ package com.example.auth
 
 import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.GetCredentialProviderConfigurationException
+import androidx.credentials.exceptions.GetCredentialUnsupportedException
+import androidx.credentials.exceptions.NoCredentialException
 import com.example.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
@@ -31,6 +36,12 @@ import kotlinx.coroutines.withContext
 object GoogleAuthManager {
 
     private const val TAG = "Auth"
+
+    private tailrec fun Context.findActivity(): Activity? = when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
 
     fun authStateFlow(auth: FirebaseAuth = Firebase.auth): Flow<FirebaseUser?> = callbackFlow {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -71,7 +82,8 @@ object GoogleAuthManager {
 
         scope.launch {
             try {
-                val cred = credentialManager.getCredential(context, request).credential
+                val targetContext = context.findActivity() ?: context
+                val cred = credentialManager.getCredential(targetContext, request).credential
                 if (cred is CustomCredential && cred.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                     val token = GoogleIdTokenCredential.createFrom(cred.data).idToken
                     Firebase.auth.signInWithCredential(GoogleAuthProvider.getCredential(token, null)).await()
@@ -108,13 +120,36 @@ object GoogleAuthManager {
             .build()
 
         scope.launch {
+            val activity = context.findActivity()
+            if (activity == null) {
+                onAuthError("Unable to launch Google Sign-In without an Activity context.")
+                return@launch
+            }
             try {
-                val activity = context as? Activity
-                if (activity == null) {
-                    onAuthError("Unable to launch Google Sign-In without an Activity context.")
-                    return@launch
+                val cred = try {
+                    credentialManager.getCredential(activity, request).credential
+                } catch (e: NoCredentialException) {
+                    Log.w(TAG, "GetSignInWithGoogleOption returned NoCredentialException; retrying with GetGoogleIdOption", e)
+                    val fallbackOption = GetGoogleIdOption.Builder()
+                        .setFilterByAuthorizedAccounts(false)
+                        .setServerClientId(clientId)
+                        .build()
+                    val fallbackRequest = GetCredentialRequest.Builder()
+                        .addCredentialOption(fallbackOption)
+                        .build()
+                    credentialManager.getCredential(activity, fallbackRequest).credential
+                } catch (e: GetCredentialUnsupportedException) {
+                    Log.w(TAG, "GetSignInWithGoogleOption unsupported; retrying with GetGoogleIdOption", e)
+                    val fallbackOption = GetGoogleIdOption.Builder()
+                        .setFilterByAuthorizedAccounts(false)
+                        .setServerClientId(clientId)
+                        .build()
+                    val fallbackRequest = GetCredentialRequest.Builder()
+                        .addCredentialOption(fallbackOption)
+                        .build()
+                    credentialManager.getCredential(activity, fallbackRequest).credential
                 }
-                val cred = credentialManager.getCredential(activity, request).credential
+
                 if (cred is CustomCredential && cred.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                     val token = GoogleIdTokenCredential.createFrom(cred.data).idToken
                     Firebase.auth.signInWithCredential(GoogleAuthProvider.getCredential(token, null)).await()
@@ -125,6 +160,15 @@ object GoogleAuthManager {
             } catch (e: GetCredentialCancellationException) {
                 Log.w(TAG, "Google Sign-In flow cancelled or dismissed: ${e.message}", e)
                 onAuthCancelled()
+            } catch (e: NoCredentialException) {
+                Log.e(TAG, "No credentials available after Google Sign-In fallback", e)
+                onAuthError("No Google account credentials available on this device. Make sure a Google account is signed in on the device and Google Sign-In is enabled in Firebase Authentication.")
+            } catch (e: GetCredentialProviderConfigurationException) {
+                Log.e(TAG, "Google Sign-In provider configuration error", e)
+                onAuthError("Google Sign-In provider misconfigured. Verify Google Play Services and Firebase SHA-1 / OAuth client setup.")
+            } catch (e: GetCredentialException) {
+                Log.e(TAG, "Credential Manager sign-in failed (${e.type})", e)
+                onAuthError(e.errorMessage?.toString() ?: e.localizedMessage ?: "Google Sign-In failed")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
