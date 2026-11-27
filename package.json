@@ -5,7 +5,7 @@
   "main": "firestore.test.js",
   "scripts": {
     "test": "echo \"No tests\"",
-    "build": "echo \"No build needed\""
+    "build": "echo \"Use Gradle to build APK\""
   },
   "repository": {
     "type": "git",
