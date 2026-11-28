@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "484740527561",
+    "project_id": "link-76252",
+    "storage_bucket": "link-76252.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:484740527561:android:2a9fcd55e52f880f74e418",
+        "android_client_info": {
+          "package_name": "com.aistudio.linkecosystem.k7v9xm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "484740527561-8b9kr2quunb6lfflnjnupp4h1ub5acao.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.linkecosystem.k7v9xm",
+            "certificate_hash": "1e8cde37b6e127a9607bdb835327b8cf5b0fcc2a"
+          }
+        },
+        {
+          "client_id": "484740527561-mlg6a2l44jvcbrdbojed7ruab9u2gnj0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.linkecosystem.k7v9xm",
+            "certificate_hash": "ddbcc01bb789df09d29781d8fed51a8ff50845ea"
+          }
+        },
+        {
+          "client_id": "484740527561-5o4phku7ka5ssjq4p3d625rimljkjond.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhzMAHM83USXuZLhPrJafJPLLkbe7pQK4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "484740527561-5o4phku7ka5ssjq4p3d625rimljkjond.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
